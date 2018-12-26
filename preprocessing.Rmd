@@ -1,0 +1,54 @@
+---
+title: "Preprocessing"
+author: "Victor G."
+date: "24 de diciembre de 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+setwd("E:/Documents/Universidad (FIB)/APA/practica")
+superConductor <- read.csv("train.csv", na.strings = c("?"))
+superConductorCompo <- read.csv("unique_m.csv", na.strings = c("?"))
+```
+
+Generating full dataframe
+```{r}
+df <- data.frame(superConductor, superConductorCompo)#merge(superConductor, superConductorCompo)
+drops <- c("critical_temp.1", "material")
+df<-df[,!(names(df) %in% drops)]
+head(df)
+```
+
+
+```{r}
+#options(max.print=1000000)
+summary(df)
+```
+
+From this we see Neon, Helium, Argon, Kripton, Xenon, Polonium, Astatine and Radon are constant at 0. We will drop them.
+
+```{r}
+#drop neon, helium, Argon, kripton, Xenon, , Polonium, Astatine and Radon
+drops <- c("Ne", "He", "Ar", "Kr", "Xe","Po", "At", "Rn")
+df<-df[,!(names(df) %in% drops)]
+```
+
+We consider dropping Cadmium too, since it looks like there might not be too many cases, but further inspection tells us this is not the case, as it has 178 non-0 rows.
+
+```{r}
+for (col in names(superConductor)){
+  hist(df[,col], main = paste("Histogram of " , col))
+}
+# Some seem to need a log
+```
+
+
+
+
+
+
