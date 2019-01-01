@@ -1,7 +1,7 @@
 ---
 title: "Preprocessing"
 author: "Victor G."
-date: "24 de diciembre de 2018"
+date: "2 de diciembre de 2018"
 output: html_document
 ---
 
