@@ -1,0 +1,26 @@
+---
+title: "NonlinearMethods"
+author: "Victor G."
+date: "2 de enero de 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+LE <- read.csv("learn_set.csv", na.strings = c("?"))
+
+```
+
+
+
+
+
+
+```{r}
+
+```

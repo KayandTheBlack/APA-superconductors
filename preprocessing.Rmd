@@ -33,8 +33,8 @@ t(summary(df))
 From this we see Neon, Helium, Argon, Kripton, Xenon, Polonium, Astatine and Radon are constant at 0. We will drop them.
 
 ```{r}
-#drop neon, helium, Argon, kripton, Xenon, , Polonium, Astatine and Radon
-drops <- c("Ne", "He", "Ar", "Kr", "Xe","Po", "At", "Rn")
+#drop neon, helium, Argon, kripton, Xenon, Pm, Polonium, Astatine and Radon
+drops <- c("Ne", "He", "Ar", "Kr", "Xe", "Pm", "Po", "At", "Rn")
 df<-df[,!(names(df) %in% drops)]
 ```
 
@@ -119,4 +119,5 @@ And save
 write.csv(learn, file="learn_set.csv")
 write.csv(test, file="test_set.csv")
 
+LE <- LE[,c(1:68, 146:159)]
 ```

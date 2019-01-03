@@ -9,15 +9,10 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 ```{r}
-LE <- read.csv("train.csv", na.strings = c("?"))
-
+LE <- read.csv("learn_set.csv", na.strings = c("?"))
+LE <- LE[,-1] #removal of indices
 ```
 
 
@@ -45,11 +40,126 @@ LE <- read.csv("train.csv", na.strings = c("?"))
 
 ```
 
-```{r}
-
-```
+KNN
 
 ```{r}
 
 ```
+
+```{r}
+
+```
+
+Quadratic SVM
+
+We will now explore SVM techniques (both this one and later on one with an RBF kernel). However, we know that SVMs are very costly to run. We will do a random subsample of the Learning set, and use the rest as validation.
+```{r}
+library(kernlab)
+```
+
+```{r}
+set.seed(42)
+LE.reduced.ind <- sample(seq_len(nrow(LE)), size = floor(0.3*nrow(LE))) # 0.2 Around 3000 examples
+LE.reduced <- LE[LE.reduced.ind,]
+VAL <- LE[-LE.reduced.ind,]
+```
+
+
+```{r}
+ptm <- proc.time()
+(qsvm = ksvm(critical_temp ~ ., data = LE.reduced, C=1, kernel = polydot(degree = 2)))
+
+pred <- predict(qsvm, VAL[,-which(names(VAL) == "critical_temp")])
+(NMSE <- sum((pred-VAL[,"critical_temp"])^2)/((length(pred)-1)*var(LE[,"critical_temp"])))
+(proc.time() - ptm)
+```
+
+## Output for 0.3
+Support Vector Machine object of class "ksvm" 
+
+SV type: eps-svr  (regression) 
+ parameter : epsilon = 0.1  cost C = 1 
+
+Polynomial kernel function. 
+ Hyperparameters : degree =  2  scale =  1  offset =  1 
+
+Number of Support Vectors : 3136 
+
+Objective Function Value : -531.0054 
+Training error : 0.109254 
+[1] 1.587173
+   user  system elapsed 
+ 335.23    0.10  338.74 
+ 
+ 
+As we can see, the NMSE is atrocious (1.6). However, we might improve it by modifying C.
+
+We want to optimize NMSE wrt parameter C. Given prohibitive cost, we will assume C is more or less the same for a subsampled set than for the bigger set, and extrapolate from there. We can't really use cross-validation (too much data), so instead we use part for training and the rest for validation. To get an initial rough estimate we will use 10%, then go to 20% when we know where to search.
+
+```{r}
+set.seed(42)
+LE.optim_ind <- sample(seq_len(nrow(LE)), size = floor(0.1*nrow(LE)))
+LE.optim <- LE[LE.optim_ind,]
+VAL.optim <- LE[-LE.optim_ind,]
+
+ptm <- proc.time()
+exps <- seq(-6,0,0.5)
+Cs <- 10^exps
+error <- rep(0,length(Cs))
+for (i in 1:length(Cs)) {
+  svm.opt = ksvm(critical_temp ~ ., data = LE.optim, C=Cs[i], kernel = polydot(degree = 2))
+  pred <- predict(svm.opt, VAL.optim[,-which(names(VAL.optim) == "critical_temp")])
+  error[i] <- sum((pred-VAL.optim[,"critical_temp"])^2)/((length(pred)-1)*var(LE[,"critical_temp"]))
+}
+(proc.time() - ptm)
+plot(exps, error)
+```
+
+
+Minimum is around 0.001, maybe a bit more (exponents -4 to -2). We need to explore this region further, now with 20%.
+
+```{r}
+set.seed(42)
+LE.optim_ind <- sample(seq_len(nrow(LE)), size = floor(0.2*nrow(LE)))
+LE.optim <- LE[LE.optim_ind,]
+VAL.optim <- LE[-LE.optim_ind,]
+
+exps <- seq(-4,-1,0.25)
+Cs <- 10^exps
+error <- rep(0,length(Cs))
+for (i in 1:length(Cs)) {
+  svm.opt = ksvm(critical_temp ~ ., data = LE.optim, C=Cs[i], kernel = polydot(degree = 2))
+  pred <- predict(svm.opt, VAL.optim[,-which(names(VAL.optim) == "critical_temp")])
+  #print(paste0(C, ": ",sum((pred-VAL.optim[,"critical_temp"])^2)/((length(pred)-1)*var(LE[,"critical_temp"]))))
+  error[i] <- sum((pred-VAL.optim[,"critical_temp"])^2)/((length(pred)-1)*var(LE[,"critical_temp"]))
+}
+plot(exps, error)
+```
+
+Our minimum is at around -3 (C=0.001), and it manages to reach .22 NMSE. This means that 78% of the variance is explained by the variables with this technique and C value!
+This is probably about the best we can get. Given the fact that a value of C this low greatly reduces the execution time, we might run a CV instead of validating as we did above.
+
+
+```{r}
+k<-10
+N<-nrow(LE)
+folds <- sample(rep(1:k, length=N), N, replace=FALSE) 
+error <- rep(0,k)
+
+for (i in 1:k) {
+  print(i)
+  train <- LE[folds!=i,] # for building the model (training)
+  valid <- LE[folds==i,] # for prediction (validation)
+  finalQSVM <- ksvm(critical_temp ~ ., data = train, C=10^-3, kernel = polydot(degree = 2))
+  
+  pred <- predict(finalQSVM, valid[,-which(names(valid) == "critical_temp")])
+  error[i] <- sum((pred-valid[,"critical_temp"])^2)/((length(pred)-1)*var(LE[,"critical_temp"]))
+}
+(100*sum(error)/k)
+```
+
+
+So our NMSE is 18.13%, or put in another way, we would only need to explain 18% more of the variance to have a perfect model, as we already explain over 80%.
+
+
 

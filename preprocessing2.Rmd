@@ -1,0 +1,101 @@
+---
+title: "Preprocessing"
+author: "Victor G."
+date: "2 de diciembre de 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+setwd("E:/Documents/Universidad (FIB)/APA/practica")
+df <- read.csv("train.csv", na.strings = c("?"))
+```
+
+```{r}
+#options(max.print=1000000)
+t(summary(df))
+```
+
+We know there are no NAs from the way data was generated. We need only do feature extraction and normalisation / log transforms.
+
+```{r}
+#Very time consuming code, only shows slightly skewed graphics for some of them
+for (col in names(df)){
+  hist(df[,col], main = paste("Histogram of ", col))
+}
+
+# Some seem to need a log
+```
+
+We will center on correcting leptokurtic and positively skewed distributions, and we will do so applying logarithmic transformations.
+
+```{r}
+library(moments)
+for (col in names(df)){ #only to physical variables, not to proportions. Too many 0s in them, distorted.
+  if(skewness(df[,col]) > 2 && kurtosis(df[,col]) > 2) { # We use 2 as threshold for logs
+      if (min(df[,col])==0) {
+        print(paste0(col, " needs log1"))
+      } else {
+        print(paste0(col, " needs log"))
+      }
+  }
+}
+
+```
+
+```{r}
+log <- c("mean_Density","wtd_mean_Density","mean_FusionHeat","wtd_mean_FusionHeat","gmean_FusionHeat","wtd_gmean_FusionHeat","gmean_ThermalConductivity","wtd_gmean_ThermalConductivity")
+log1 <- c("wtd_range_atomic_mass","wtd_range_Density","range_FusionHeat","wtd_range_FusionHeat","std_FusionHeat","wtd_std_FusionHeat")
+
+for (col in log) {
+  df[,paste0(col, "_log")] = log(df[,col])
+}
+
+for (col in log1) {
+  df[,paste0(col, "_log1")] = log1p(df[,col])
+}
+```
+
+```{r}
+t(summary(df))
+```
+
+Now we have some variables with a more correct kurtosis. Let's check one of them:
+
+```{r}
+hist(df[,"mean_Density"], main = "Histogram of mean_Density")
+hist(df[,"mean_Density_log"], main = "Histogram of mean_Density_log")
+```
+
+As we can see, much more normal and symmetric. We drop the old ones
+
+```{r}
+df <- df[, -which(names(df) %in% c(log,log1))]
+```
+
+Now we should standardize, it is needed for methods such as KNN, and it doesn't affect negatively in general
+
+```{r}
+standardized <- as.data.frame(scale(df))
+```
+
+Finally, sampling and splitting the data.
+
+```{r}
+set.seed(42)
+learn_size <- floor(0.7*nrow(standardized))
+learn_ind <- sample(seq_len(nrow(standardized)), size = learn_size)
+learn <- standardized[learn_ind,]
+test <- standardized[-learn_ind,]
+```
+
+And save
+
+```{r}
+write.csv(learn, file="learn_set.csv")
+write.csv(test, file="test_set.csv")
+```
