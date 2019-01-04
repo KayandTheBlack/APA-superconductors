@@ -80,6 +80,7 @@ df <- df[, -which(names(df) %in% c(log,log1))]
 Now we should standardize, it is needed for methods such as KNN, and it doesn't affect negatively in general
 
 ```{r}
+(sd(df[,"critical_temp"]))
 standardized <- as.data.frame(scale(df))
 ```
 

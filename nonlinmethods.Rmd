@@ -154,9 +154,11 @@ for (i in 1:k) {
 (100*sum(error)/k)
 ```
 
-Our error is an impressive 11.5%. Studying one of the SVMs trained, we find that the number of support vectors is 6896 out of 13396 members in the training set. This means that 50% of the training data is inside the epsilon zone of 0.1, or less than 0.1 away from the predicted value. Our training error is 8% too.
+Our error is a decent 11.5%. Studying one of the SVMs trained, we find that the number of support vectors is 6896 out of 13396 members in the training set. This means that around 50% of the training data is inside the epsilon zone of 0.1, or less than 0.1 away from the predicted value. Our training error is 8% too.
 
-We note that we are not using the Root MSE nor the MSE due to the fact that we normalized the critical temperature. We will be able to revert this normalisation by multiplying by the original variance and adding the original mean later on, but for now NMSE is enough for our purposes.
+We note that we are not using the Root MSE nor the MSE due to the fact that we scaled the critical temperature. We will be able to revert this normalisation to obtain the MSE by multiplying by the original variance (34.25436^2). This is because the real MSE is actually the current MSE but with the internal values divided by the standard deviation (from the scale function back in preprocessing), and since the difference is squared we should also square the sd. So, in relation with our MSE on the normalized critical_temperature, the real MSE is sd^2 times greater. Note that since both elements in the difference have the mean, we do not take it into account here, but to predict real values we must also add the original mean afterwards.
+
+But for now NMSE is enough for our purposes.
 
 
 
