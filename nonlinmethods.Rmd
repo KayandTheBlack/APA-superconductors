@@ -13,8 +13,101 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 LE <- read.csv("learn_set.csv", na.strings = c("?"))
-
+LE <- LE[,-1] #removal of indices
 ```
+
+
+SVM with RBF kernel
+
+We will follow the same approach as with quadratic SVM in linear methods, but this time we must also optimize the sigma value of the Kernel. We should do both at the same time, but it is very costly in execution time, so we will do a sort of 'hillclimbing', optimizing one then the other succesively.
+```{r}
+library(kernlab)
+```
+
+```{r}
+set.seed(42)
+LE.optim_ind <- sample(seq_len(nrow(LE)), size = floor(0.2*nrow(LE)))
+LE.optim <- LE[LE.optim_ind,]
+VAL.optim <- LE[-LE.optim_ind,]
+
+ptm <- proc.time()
+exps <- seq(-3,3,0.5)
+Cs <- 10^exps
+error <- rep(0,length(Cs))
+for (i in 1:length(Cs)) {
+  print(i)
+  svm.opt = ksvm(critical_temp ~ ., data = LE.optim, C=Cs[i], kernel = rbfdot())
+  pred <- predict(svm.opt, VAL.optim[,-which(names(VAL.optim) == "critical_temp")])
+  error[i] <- sum((pred-VAL.optim[,"critical_temp"])^2)/((length(pred)-1)*var(LE[,"critical_temp"]))
+}
+(proc.time() - ptm)
+plot(exps, error)
+```
+
+
+```{r}
+LE.optim_ind <- sample(seq_len(nrow(LE)), size = floor(0.2*nrow(LE)))
+LE.optim <- LE[LE.optim_ind,]
+VAL.optim <- LE[-LE.optim_ind,]
+
+ptm <- proc.time()
+exps <- seq(0,2,0.25)
+Cs <- 10^exps
+error <- rep(0,length(Cs))
+for (i in 1:length(Cs)) {
+  print(i)
+  svm.opt = ksvm(critical_temp ~ ., data = LE.optim, C=Cs[i], kernel = rbfdot())
+  pred <- predict(svm.opt, VAL.optim[,-which(names(VAL.optim) == "critical_temp")])
+  error[i] <- sum((pred-VAL.optim[,"critical_temp"])^2)/((length(pred)-1)*var(LE[,"critical_temp"]))
+}
+(proc.time() - ptm)
+plot(exps, error)
+```
+
+So first C will be 10^0.5
+
+```{r}
+LE.optim_ind <- sample(seq_len(nrow(LE)), size = floor(0.2*nrow(LE)))
+LE.optim <- LE[LE.optim_ind,]
+VAL.optim <- LE[-LE.optim_ind,]
+
+ptm <- proc.time()
+exps <- seq(-2,2,0.5)
+Ys <- 10^exps
+error <- rep(0,length(Cs))
+for (i in 1:length(Cs)) {
+  print(i)
+  svm.opt = ksvm(critical_temp ~ ., data = LE.optim, C=10^0.5, kernel = rbfdot(sigma=Ys[i]))
+  pred <- predict(svm.opt, VAL.optim[,-which(names(VAL.optim) == "critical_temp")])
+  error[i] <- sum((pred-VAL.optim[,"critical_temp"])^2)/((length(pred)-1)*var(LE[,"critical_temp"]))
+}
+(proc.time() - ptm)
+plot(exps, error)
+```
+
+```{r}
+LE.optim_ind <- sample(seq_len(nrow(LE)), size = floor(0.2*nrow(LE)))
+LE.optim <- LE[LE.optim_ind,]
+VAL.optim <- LE[-LE.optim_ind,]
+
+ptm <- proc.time()
+exps <- seq(-3,-1,0.25)
+Ys <- 10^exps
+error <- rep(0,length(Cs))
+for (i in 1:length(Cs)) {
+  print(i)
+  svm.opt = ksvm(critical_temp ~ ., data = LE.optim, C=10^0.5, kernel = rbfdot(sigma=Ys[i]))
+  pred <- predict(svm.opt, VAL.optim[,-which(names(VAL.optim) == "critical_temp")])
+  error[i] <- sum((pred-VAL.optim[,"critical_temp"])^2)/((length(pred)-1)*var(LE[,"critical_temp"]))
+}
+(proc.time() - ptm)
+plot(exps, error)
+```
+
+
+
+
+We optimize C again, this time with sigma = 10^-1.25
 
 
 
@@ -22,5 +115,65 @@ LE <- read.csv("learn_set.csv", na.strings = c("?"))
 
 
 ```{r}
+LE.optim_ind <- sample(seq_len(nrow(LE)), size = floor(0.2*nrow(LE)))
+LE.optim <- LE[LE.optim_ind,]
+VAL.optim <- LE[-LE.optim_ind,]
 
+ptm <- proc.time()
+exps <- seq(0.5,1.5,0.1)
+Cs <- 10^exps
+error <- rep(0,length(Cs))
+for (i in 1:length(Cs)) {
+  print(i)
+  svm.opt = ksvm(critical_temp ~ ., data = LE.optim, C=Cs[i], kernel = rbfdot(sigma = 10^(-1.25)))
+  pred <- predict(svm.opt, VAL.optim[,-which(names(VAL.optim) == "critical_temp")])
+  error[i] <- sum((pred-VAL.optim[,"critical_temp"])^2)/((length(pred)-1)*var(LE[,"critical_temp"]))
+}
+(proc.time() - ptm)
+plot(exps, error)
 ```
+
+
+We can observe the error goes down from .170 to .167 aproximately by optimizing the C parameter again. Since this improvement is not too big, we will leave it here, and run the crossvalidation
+
+```{r}
+k<-10
+N<-nrow(LE)
+folds <- sample(rep(1:k, length=N), N, replace=FALSE) 
+error <- rep(0,k)
+
+for (i in 1:k) {
+  print(i)
+  train <- LE[folds!=i,] # for building the model (training)
+  valid <- LE[folds==i,] # for prediction (validation)
+  finalRBFSVM <- ksvm(critical_temp ~ ., data = train, C=10^1.1, kernel = rbfdot(sigma = 10^(-1.25)))
+  
+  pred <- predict(finalRBFSVM, valid[,-which(names(valid) == "critical_temp")])
+  error[i] <- sum((pred-valid[,"critical_temp"])^2)/((length(pred)-1)*var(LE[,"critical_temp"]))
+}
+(100*sum(error)/k)
+```
+
+Our error is an impressive 11.5%. Studying one of the SVMs trained, we find that the number of support vectors is 6896 out of 13396 members in the training set. This means that 50% of the training data is inside the epsilon zone of 0.1, or less than 0.1 away from the predicted value. Our training error is 8% too.
+
+We note that we are not using the Root MSE nor the MSE due to the fact that we normalized the critical temperature. We will be able to revert this normalisation by multiplying by the original variance and adding the original mean later on, but for now NMSE is enough for our purposes.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
