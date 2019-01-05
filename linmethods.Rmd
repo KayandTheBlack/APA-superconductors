@@ -42,13 +42,39 @@ LE <- LE[,-1] #removal of indices
 
 KNN
 
-```{r}
+Nearest Neighbours is quite the straightforward method, with only one parameter to optimize. We proceed to do so, using CV. Usually, in classification, we would use an odd K, but since with regression it takes the mean this is not necessary.
 
+```{r}
+library(FNN)
 ```
 
 ```{r}
-
+k<-10
+N<-nrow(LE)
+folds <- sample(rep(1:k, length=N), N, replace=FALSE) 
+error <- rep(0,k)
+maxNeigh <- 20
+nerror <- rep(0,maxNeigh)
+for (Knn.K in 1:maxNeigh) {
+  print(Knn.K)
+  for (i in 1:k) {
+    train <- LE[folds!=i,] # for building the model (training)
+    valid <- LE[folds==i,] # for prediction (validation)
+    (model <- knn.reg(train=train[,-which(names(valid) == "critical_temp")], test=valid[,-which(names(valid) == "critical_temp")], y= train[,"critical_temp"], k=Knn.K))
+    pred <- model$pred
+    error[i] <- sum((pred-valid[,"critical_temp"])^2)/((length(pred)-1)*var(LE[,"critical_temp"]))
+  }
+  nerror[Knn.K] <- 100*sum(error)/k
+}
+plot(seq(1,maxNeigh), nerror)
 ```
+
+It appears that the best result is achieved with only 2 neighbours, it's NMSE is:
+
+```{r}
+(nerror[2])
+```
+
 
 Quadratic SVM
 

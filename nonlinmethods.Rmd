@@ -158,6 +158,15 @@ Our error is a decent 11.5%. Studying one of the SVMs trained, we find that the 
 
 We note that we are not using the Root MSE nor the MSE due to the fact that we scaled the critical temperature. We will be able to revert this normalisation to obtain the MSE by multiplying by the original variance (34.25436^2). This is because the real MSE is actually the current MSE but with the internal values divided by the standard deviation (from the scale function back in preprocessing), and since the difference is squared we should also square the sd. So, in relation with our MSE on the normalized critical_temperature, the real MSE is sd^2 times greater. Note that since both elements in the difference have the mean, we do not take it into account here, but to predict real values we must also add the original mean afterwards.
 
+For example, with our case of 11.5% NMSE, we'd have:
+
+```{r}
+MSE.standard <- 11.50602/100*(1487*var(LE[,"critical_temp"]))/1488
+(RMSE.real <- MSE.standard^0.5*34.25436)
+```
+
+This would mean we can expect 11.58 K of difference between the predicted and the actual result.
+
 But for now NMSE is enough for our purposes.
 
 
