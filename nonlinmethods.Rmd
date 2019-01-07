@@ -17,6 +17,155 @@ LE <- LE[,-1] #removal of indices
 ```
 
 
+```{r}
+library(caret)
+#trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+trctrl <- trainControl(method = "none")
+
+(decays <- 10^seq(-3,0,by=0.1))
+df <- data.frame(Decay=double(),
+                 Error=double(),
+                 stringsAsFactors=FALSE)
+
+set.seed(42)
+LE.optim_ind <- sample(seq_len(nrow(LE)), size = floor(0.2*nrow(LE)))
+LE.optim <- LE[LE.optim_ind,]
+VAL.optim <- LE[-LE.optim_ind,]
+
+```
+
+```{r}
+LE.optim.x <- LE.optim[, names(LE.optim) != "critical_temp"] 
+LE.optim.y <- LE.optim[, "critical_temp"] 
+```
+
+
+First we'll fix a large number of hidden units in one hidden layer, and explore different regularization values.
+(note: this will take a bit to execute)
+
+```{r}
+
+print(c("decay","error"))
+start_time <- Sys.time()
+last <- Sys.time()
+for (dec in decays){
+  model.mlp <- train (y = LE.optim.y, x=LE.optim.x,
+                        method='nnet', 
+                        maxit = 500, 
+                        trace = FALSE,
+                        linout = T,
+                        tuneGrid = expand.grid(.size=40,.decay=dec), 
+                        trControl=trctrl,
+                        MaxNWts = 5000
+                      )
+  
+  pred <- predict (model.mlp, VAL.optim[,-which(names(VAL.optim) == "critical_temp")])
+  error <- sum((pred-VAL.optim[,"critical_temp"])^2)/((length(pred)-1)*var(LE[,"critical_temp"]))
+  
+  #squaredError = sum(abs(p2 - rock.y[learn])^2)
+  print(c(dec,error))
+  # postResample(p2,VAL.optim[,"critical_temp"])
+  
+  newRow <- data.frame(Decay=dec,Error=error)
+  df <- rbind(df,newRow)
+  curr <- Sys.time()
+  
+  print(curr-last)
+  last <- Sys.time()
+}
+
+end_time <- Sys.time()
+end_time - start_time
+
+df
+plot(df)
+
+
+```
+
+We can observe the best results with a regularization value of 1.
+
+Now we'll explore different numbers of hidden units in one hidden layer with that regularization value.
+(note: this will take a bit to execute)
+
+```{r}
+
+(sizes <- seq(1,40,by=1))
+
+df2 <- data.frame(Size=integer(),
+                 Error=double(),
+                 stringsAsFactors=FALSE)
+
+print(c("decay","error"))
+start_time <- Sys.time()
+last <- Sys.time()
+for (siz in sizes){
+  model.mlp <- train (y = LE.optim.y, x=LE.optim.x,
+                        method='nnet', 
+                        maxit = 500, 
+                        trace = FALSE,
+                        linout = T,
+                        tuneGrid = expand.grid(.size=siz,.decay=1.0), 
+                        trControl=trctrl,
+                        MaxNWts = 5000
+                      )
+  
+  pred <- predict (model.mlp, VAL.optim[,-which(names(VAL.optim) == "critical_temp")])
+  error <- sum((pred-VAL.optim[,"critical_temp"])^2)/((length(pred)-1)*var(LE[,"critical_temp"]))
+  
+  print(c(siz,error))
+  # postResample(p2,VAL.optim[,"critical_temp"])
+  
+  newRow <- data.frame(Size=siz,Error=error)
+  df2 <- rbind(df2,newRow)
+  curr <- Sys.time()
+  
+  print(curr-last)
+  last <- Sys.time()
+}
+
+end_time <- Sys.time()
+end_time - start_time
+
+df2
+plot(df2)
+
+```
+
+In this case it seems we'll get best results using 11 or 18. Since they are very similar, we'll go with 11 since it's simpler.
+
+Now we'll calculate the error using repeated-cross-validation.
+  
+```{r}
+trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+print(c("size","decay","error"))
+
+model.mlp <- train (y = LE.optim.y, x=LE.optim.x,
+                      method='nnet', 
+                      maxit = 500, 
+                      trace = FALSE,
+                      linout = T,
+                      tuneGrid = expand.grid(.size=11,.decay=1.0), 
+                      trControl=trctrl,
+                      MaxNWts = 5000
+                    )
+
+pred <- predict (model.mlp, VAL.optim[,-which(names(VAL.optim) == "critical_temp")])
+error <- sum((pred-VAL.optim[,"critical_temp"])^2)/((length(pred)-1)*var(LE[,"critical_temp"]))
+
+LE.x <- LE[, names(LE) != "critical_temp"] 
+LE.y <- LE[, "critical_temp"] 
+
+print(c(11,1.0,error))
+
+
+
+
+```
+
+We end up with an alright 18.8% of error.
+
+
 SVM with RBF kernel
 
 We will follow the same approach as with quadratic SVM in linear methods, but this time we must also optimize the sigma value of the Kernel. We should do both at the same time, but it is very costly in execution time, so we will do a sort of 'hillclimbing', optimizing one then the other succesively.
