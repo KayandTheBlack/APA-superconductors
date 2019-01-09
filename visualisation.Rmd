@@ -1,0 +1,17 @@
+---
+title: "Visualisation"
+author: "Victor G."
+date: "9 de enero de 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+LE <- read.csv("learn_set.csv", na.strings = c("?"))
+LE <- LE[,-1] #removal of indices
+```
+
