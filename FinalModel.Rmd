@@ -1,0 +1,47 @@
+---
+title: "FinalModel"
+author: "Victor G."
+date: "7 de enero de 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+LE <- read.csv("learn_set.csv", na.strings = c("?"))
+LE <- LE[,-1] #removal of indices
+
+TE <- read.csv("test_set.csv", na.strings = c("?"))
+TE <- TE[,-1] #removal of indices
+```
+
+
+```{r}
+library(FNN)
+```
+
+
+
+
+```{r}
+
+set.seed(42)
+
+model <- knn.reg(train=LE[,-which(names(LE) == "critical_temp")], test=TE[,-which(names(TE) == "critical_temp")], y= LE[,"critical_temp"], k=2)
+pred <- model$pred
+(SSE <- sum((pred-TE[,"critical_temp"])^2))
+
+```
+
+```{r}
+(var(c(LE[,"critical_temp"], TE[,"critical_temp"]))) # = 1
+(NMSE<-SSE/(length(pred)-1)*100)
+(MSE.standard<-SSE/length(pred))
+(RMSE.real <- MSE.standard^0.5*34.25436)
+
+```
+
+
+
