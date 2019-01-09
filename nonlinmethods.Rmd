@@ -16,6 +16,7 @@ LE <- read.csv("learn_set.csv", na.strings = c("?"))
 LE <- LE[,-1] #removal of indices
 ```
 
+#MLP
 
 ```{r}
 library(caret)
@@ -166,7 +167,7 @@ print(c(11,1.0,error))
 We end up with an alright 18.8% of error.
 
 
-SVM with RBF kernel
+#SVM with RBF kernel
 
 We will follow the same approach as with quadratic SVM in linear methods, but this time we must also optimize the sigma value of the Kernel. We should do both at the same time, but it is very costly in execution time, so we will do a sort of 'hillclimbing', optimizing one then the other succesively.
 ```{r}

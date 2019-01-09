@@ -184,8 +184,13 @@ for (i in 1:k) {
 (100*sum(error)/k)
 ```
 
-(OUTPUT: 18.13038%)
-So our NMSE is 18.13%, or put in another way, we would only need to explain 18% more of the variance to have a perfect model, as we already explain over 80%.
+(OUTPUT: 18.1753%)
+So our NMSE is 18.18%, or put in another way, we would only need to explain 18% more of the variance to have a perfect model, as we already explain over 80%.
 
 
 
+```{r}
+(finalQSVM)
+
+print(nrow(train))
+```
