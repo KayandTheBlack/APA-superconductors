@@ -15,3 +15,20 @@ LE <- read.csv("learn_set.csv", na.strings = c("?"))
 LE <- LE[,-1] #removal of indices
 ```
 
+```{r}
+
+require(pls)
+set.seed (1000)
+
+pcr_model <- pcr(critical_temp~., data = LE, scale = TRUE, validation = "CV")
+```
+
+
+```{r}
+summary(pcr_model)
+validationplot(pcr_model)
+```
+
+
+
+
