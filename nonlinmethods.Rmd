@@ -23,7 +23,7 @@ library(caret)
 #trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
 trctrl <- trainControl(method = "none")
 
-(decays <- 10^seq(-3,0,by=0.1))
+(decays <- 10^seq(-3,3,by=0.1))
 df <- data.frame(Decay=double(),
                  Error=double(),
                  stringsAsFactors=FALSE)
@@ -45,10 +45,9 @@ First we'll fix a large number of hidden units in one hidden layer, and explore 
 (note: this will take a bit to execute)
 
 ```{r}
-
+set.seed(42)
 print(c("decay","error"))
-start_time <- Sys.time()
-last <- Sys.time()
+
 for (dec in decays){
   model.mlp <- train (y = LE.optim.y, x=LE.optim.x,
                         method='nnet', 
@@ -63,20 +62,14 @@ for (dec in decays){
   pred <- predict (model.mlp, VAL.optim[,-which(names(VAL.optim) == "critical_temp")])
   error <- sum((pred-VAL.optim[,"critical_temp"])^2)/((length(pred)-1)*var(LE[,"critical_temp"]))
   
-  #squaredError = sum(abs(p2 - rock.y[learn])^2)
+
   print(c(dec,error))
-  # postResample(p2,VAL.optim[,"critical_temp"])
   
   newRow <- data.frame(Decay=dec,Error=error)
   df <- rbind(df,newRow)
-  curr <- Sys.time()
   
-  print(curr-last)
-  last <- Sys.time()
-}
 
-end_time <- Sys.time()
-end_time - start_time
+}
 
 df
 plot(df)
@@ -90,7 +83,7 @@ Now we'll explore different numbers of hidden units in one hidden layer with tha
 (note: this will take a bit to execute)
 
 ```{r}
-
+set.seed(42)
 (sizes <- seq(1,40,by=1))
 
 df2 <- data.frame(Size=integer(),
@@ -98,8 +91,7 @@ df2 <- data.frame(Size=integer(),
                  stringsAsFactors=FALSE)
 
 print(c("decay","error"))
-start_time <- Sys.time()
-last <- Sys.time()
+
 for (siz in sizes){
   model.mlp <- train (y = LE.optim.y, x=LE.optim.x,
                         method='nnet', 
@@ -115,29 +107,24 @@ for (siz in sizes){
   error <- sum((pred-VAL.optim[,"critical_temp"])^2)/((length(pred)-1)*var(LE[,"critical_temp"]))
   
   print(c(siz,error))
-  # postResample(p2,VAL.optim[,"critical_temp"])
   
   newRow <- data.frame(Size=siz,Error=error)
   df2 <- rbind(df2,newRow)
-  curr <- Sys.time()
-  
-  print(curr-last)
-  last <- Sys.time()
+
 }
 
-end_time <- Sys.time()
-end_time - start_time
 
 df2
 plot(df2)
 
 ```
 
-In this case it seems we'll get best results using 11 or 18. Since they are very similar, we'll go with 11 since it's simpler.
+In this case it seems we'll get best results using 9 or 27. Since they are very similar, we'll go with 9 since it's simpler.
 
 Now we'll calculate the error using repeated-cross-validation.
   
 ```{r}
+set.seed(42)
 trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
 print(c("size","decay","error"))
 
@@ -146,7 +133,7 @@ model.mlp <- train (y = LE.optim.y, x=LE.optim.x,
                       maxit = 500, 
                       trace = FALSE,
                       linout = T,
-                      tuneGrid = expand.grid(.size=11,.decay=1.0), 
+                      tuneGrid = expand.grid(.size=9,.decay=1.0), 
                       trControl=trctrl,
                       MaxNWts = 5000
                     )
@@ -157,14 +144,14 @@ error <- sum((pred-VAL.optim[,"critical_temp"])^2)/((length(pred)-1)*var(LE[,"cr
 LE.x <- LE[, names(LE) != "critical_temp"] 
 LE.y <- LE[, "critical_temp"] 
 
-print(c(11,1.0,error))
+print(c(9,1.0,error))
 
 
 
 
 ```
 
-We end up with an alright 18.8% of error.
+We end up with an alright 18.3% of error.
 
 
 #SVM with RBF kernel
@@ -284,9 +271,10 @@ plot(exps, error)
 ```
 
 
-We can observe the error goes down from .170 to .167 aproximately by optimizing the C parameter again. Since this improvement is not too big, we will leave it here, and run the crossvalidation
+We can observe the error goes down from .170 to .165 aproximately by optimizing the C parameter again. Since this improvement is not too big, we will leave it here, and run the crossvalidation
 
 ```{r}
+set.seed(42)
 k<-10
 N<-nrow(LE)
 folds <- sample(rep(1:k, length=N), N, replace=FALSE) 
@@ -296,7 +284,7 @@ for (i in 1:k) {
   print(i)
   train <- LE[folds!=i,] # for building the model (training)
   valid <- LE[folds==i,] # for prediction (validation)
-  finalRBFSVM <- ksvm(critical_temp ~ ., data = train, C=10^1.1, kernel = rbfdot(sigma = 10^(-1.25)))
+  finalRBFSVM <- ksvm(critical_temp ~ ., data = train, C=10^1.2, kernel = rbfdot(sigma = 10^(-1.25)))
   
   pred <- predict(finalRBFSVM, valid[,-which(names(valid) == "critical_temp")])
   error[i] <- sum((pred-valid[,"critical_temp"])^2)/((length(pred)-1)*var(LE[,"critical_temp"]))

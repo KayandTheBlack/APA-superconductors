@@ -15,30 +15,47 @@ LE <- read.csv("learn_set.csv", na.strings = c("?"))
 LE <- LE[,-1] #removal of indices
 ```
 
-
-
-
-
+#Ridge Regression
 
 ```{r}
-
+set.seed(42)
+library(MASS)
 ```
+
+First we will choose a value for lambda via GCV.
+We'll start with a wide logarithmic search.
 
 ```{r}
-
+lambdas <- 10^seq(-6,2,0.1)
+select(lm.ridge(critical_temp ~., lambda = lambdas, data=LE))
 ```
+
+And then perform a finer search around the result (0.1)
 
 ```{r}
-
+lambdas <- seq(0,1,0.001)
+select(lm.ridge(critical_temp ~., lambda = lambdas, data=LE))
 ```
+
+Which gives us 0.106 as the best value, so we'll refit the model with it:
 
 ```{r}
-
+(crit_temp.ridge.reg <- lm.ridge(critical_temp ~., lambda = 0.106, data=LE))
 ```
+
+And finally we'll check its error and R2 coefficient:
 
 ```{r}
+pred <- as.matrix(cbind(const=1,LE[, names(LE) != "critical_temp"])) %*% coef(crit_temp.ridge.reg)
 
+error <- sum((pred-LE[,"critical_temp"])^2)/((length(pred)-1)*var(LE[,"critical_temp"]))
+print(error)
+print("R2 coefficient:")
+(1 - crit_temp.ridge.reg$GCV)*100
 ```
+
+We get an alright error of 27.3% and from the R2 coefficient we can see that our problem is very much linear and so these methods will most likely be better.
+
 
 KNN
 
