@@ -12,39 +12,19 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 setwd("E:/Documents/Universidad (FIB)/APA/practica")
-superConductor <- read.csv("train.csv", na.strings = c("?"))
-superConductorCompo <- read.csv("unique_m.csv", na.strings = c("?"))
+df <- read.csv("train.csv", na.strings = c("?"))
 ```
-
-Generating full dataframe
-```{r}
-df <- data.frame(superConductor, superConductorCompo)#merge(superConductor, superConductorCompo)
-drops <- c("critical_temp.1", "material")
-df<-df[,!(names(df) %in% drops)]
-t(head(df))
-```
-
 
 ```{r}
 #options(max.print=1000000)
 t(summary(df))
 ```
 
-From this we see Neon, Helium, Argon, Kripton, Xenon, Polonium, Astatine and Radon are constant at 0. We will drop them.
-
-```{r}
-#drop neon, helium, Argon, kripton, Xenon, Pm, Polonium, Astatine and Radon
-drops <- c("Ne", "He", "Ar", "Kr", "Xe", "Pm", "Po", "At", "Rn")
-df<-df[,!(names(df) %in% drops)]
-```
-
-We consider dropping Cadmium too, since it looks like there might not be too many cases, but further inspection tells us this is not the case, as it has 178 non-0 rows.
-
 We know there are no NAs from the way data was generated. We need only do feature extraction and normalisation / log transforms.
 
 ```{r}
 #Very time consuming code, only shows slightly skewed graphics for some of them
-for (col in names(superConductor)){
+for (col in names(df)){
   hist(df[,col], main = paste("Histogram of ", col))
 }
 
@@ -55,7 +35,7 @@ We will center on correcting leptokurtic and positively skewed distributions, an
 
 ```{r}
 library(moments)
-for (col in names(superConductor)){ #only to physical variables, not to proportions. Too many 0s in them, distorted.
+for (col in names(df)){ #only to physical variables, not to proportions. Too many 0s in them, distorted.
   if(skewness(df[,col]) > 2 && kurtosis(df[,col]) > 2) { # We use 2 as threshold for logs
       if (min(df[,col])==0) {
         print(paste0(col, " needs log1"))
@@ -100,6 +80,7 @@ df <- df[, -which(names(df) %in% c(log,log1))]
 Now we should standardize, it is needed for methods such as KNN, and it doesn't affect negatively in general
 
 ```{r}
+(sd(df[,"critical_temp"]))
 standardized <- as.data.frame(scale(df))
 ```
 
@@ -118,6 +99,4 @@ And save
 ```{r}
 write.csv(learn, file="learn_set.csv")
 write.csv(test, file="test_set.csv")
-
-LE <- LE[,c(1:68, 146:159)]
 ```
