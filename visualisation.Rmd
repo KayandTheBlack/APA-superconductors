@@ -1,6 +1,6 @@
 ---
 title: "Visualisation"
-author: "Victor G."
+author: "Victor G., Guillem F."
 date: "9 de enero de 2019"
 output: html_document
 ---

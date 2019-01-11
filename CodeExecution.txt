@@ -1,0 +1,1 @@
+El orden de ejecición de los archivos (abiertos en Rstudio por ejemplo) se empieza con el archivo de preprocessing.Rmd y seguidamente se puede ejecutar cualquiera de los otros archivos (visualisation.Rmd, linemethods.Rmd, nonlinemethods.Rmd, FinalModel.Rmd) dado que son independientes entre si.

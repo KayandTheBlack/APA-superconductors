@@ -1,6 +1,6 @@
 ---
 title: "LinearMethods"
-author: "Victor G."
+author: "Victor G., Guillem F."
 date: "21 de diciembre de 2018"
 output: html_document
 ---
